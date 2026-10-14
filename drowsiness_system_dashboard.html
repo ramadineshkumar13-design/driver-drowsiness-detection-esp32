@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Driver Drowsiness System - Live Firmware Simulator</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulse-fast {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.95); }
+    }
+    .flash-2hz { animation: pulse-fast 0.5s infinite; }
+    .flash-5hz { animation: pulse-fast 0.2s infinite; }
+  </style>
+</head>
+<body class="bg-slate-900 text-slate-100 antialiased p-4 min-h-screen font-sans">
+  <div class="max-w-6xl mx-auto space-y-4">
+    
+    <!-- HEADER BAR -->
+    <div class="bg-slate-800/90 border border-slate-700 rounded-xl p-4 flex flex-wrap items-center justify-between shadow-lg">
+      <div>
+        <div class="flex items-center gap-2">
+          <span class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+          <h1 class="text-lg font-bold text-white tracking-wide">Driver Drowsiness Detection & Emergency Response System</h1>
+          <span class="text-xs bg-blue-900/60 text-blue-300 border border-blue-700 px-2 py-0.5 rounded font-mono">ESP-IDF v5.x • FreeRTOS Dual-Core</span>
+        </div>
+        <p class="text-xs text-slate-400 mt-1">Live Firmware Telemetry & Sensor-to-Actuator Simulation Engine</p>
+      </div>
+
+      <div class="flex items-center gap-3 mt-2 sm:mt-0">
+        <button id="btn-web-serial" onclick="toggleWebSerial()" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md shadow-emerald-950 border border-emerald-400/40 cursor-pointer">
+          <span id="serial-dot" class="w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping"></span>
+          <span id="serial-text">🔌 Connect Real ESP32 (COM6)</span>
+        </button>
+        <div class="flex items-center gap-1.5 bg-slate-950 px-2.5 py-1 rounded border border-slate-800">
+          <span class="text-[11px] text-slate-400">Clock:</span>
+          <span id="sim-clock" class="text-xs font-mono font-bold text-amber-400">00:00.0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN STATUS BAR -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <!-- FSM STATE -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col justify-between">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">FSM State</span>
+        <div class="flex items-center gap-2 mt-1">
+          <span id="state-dot" class="w-3.5 h-3.5 rounded-full bg-emerald-500"></span>
+          <span id="state-badge" class="text-base font-extrabold text-emerald-400 tracking-wide">NORMAL</span>
+        </div>
+        <span id="state-desc" class="text-[11px] text-slate-400 mt-1">Regular breathing, active steering</span>
+      </div>
+
+      <!-- BREATHING RATE -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col justify-between">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Respiration Rate</span>
+        <div class="flex items-baseline gap-1 mt-1">
+          <span id="bpm-val" class="text-2xl font-mono font-extrabold text-cyan-400">16.0</span>
+          <span class="text-xs text-slate-400">BPM</span>
+        </div>
+        <div class="flex items-center gap-1.5 mt-1 text-[11px]">
+          <span id="apnea-badge" class="px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono text-[10px]">Normal Rhythm</span>
+        </div>
+      </div>
+
+      <!-- MOTOR PWM SPEED -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col justify-between">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Motor PWM Speed</span>
+        <div class="flex items-baseline gap-1 mt-1">
+          <span id="speed-val" class="text-2xl font-mono font-extrabold text-emerald-400">100%</span>
+          <span class="text-xs text-slate-400">Cruising</span>
+        </div>
+        <div class="w-full bg-slate-950 rounded-full h-1.5 mt-2 overflow-hidden border border-slate-800">
+          <div id="speed-bar" class="bg-emerald-500 h-full w-full transition-all duration-100"></div>
+        </div>
+      </div>
+
+      <!-- ACTUATOR STATUS -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 flex flex-col justify-between">
+        <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Alert Actuators</span>
+        <div class="flex items-center gap-3 mt-1.5">
+          <!-- BUZZER -->
+          <div class="flex items-center gap-1.5">
+            <div id="buzzer-icon" class="w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-xs text-slate-400">🔊</div>
+            <span id="buzzer-text" class="text-xs font-semibold text-slate-400">OFF</span>
+          </div>
+          <!-- LEDS -->
+          <div class="flex items-center gap-1.5">
+            <div id="led-warn" class="w-3.5 h-3.5 rounded-full bg-slate-700 border border-slate-600" title="Warning LED"></div>
+            <div id="led-crit" class="w-3.5 h-3.5 rounded-full bg-slate-700 border border-slate-600" title="Critical LED"></div>
+          </div>
+        </div>
+        <span id="latency-text" class="text-[10px] text-slate-400 mt-1 font-mono">Core 1 Latency: 94 µs</span>
+      </div>
+    </div>
+
+    <!-- LIVE WAVEFORM CANVAS & STEERING GAUGE -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <!-- WAVEFORM -->
+      <div class="lg:col-span-2 bg-slate-800 border border-slate-700 rounded-xl p-3.5 flex flex-col shadow">
+        <div class="flex items-center justify-between mb-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-200">Physiological Respiratory Signal (ADS1115 A0)</span>
+            <span id="artifact-indicator" class="text-[10px] bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">Clean Waveform</span>
+          </div>
+          <span class="text-[10px] text-cyan-400 font-mono">20 Hz Filtered + Peak Gating</span>
+        </div>
+        <div class="relative bg-slate-950 rounded-lg p-1 border border-slate-800 overflow-hidden h-44">
+          <canvas id="wave-canvas" width="600" height="170" class="w-full h-full block"></canvas>
+        </div>
+      </div>
+
+      <!-- STEERING & GPS MINI -->
+      <div class="bg-slate-800 border border-slate-700 rounded-xl p-3.5 flex flex-col justify-between shadow">
+        <div>
+          <div class="flex items-center justify-between mb-1">
+            <span class="text-xs font-bold text-slate-200">Steering Dynamics (ADS1115 A1)</span>
+            <span id="steer-status" class="text-[10px] text-emerald-400 font-semibold">Active</span>
+          </div>
+          <!-- STEERING VISUAL -->
+          <div class="bg-slate-950 rounded-lg p-2.5 border border-slate-800 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <div id="steering-wheel" class="w-9 h-9 rounded-full border-2 border-slate-500 flex items-center justify-center transition-transform duration-75">
+                <div class="w-6 h-0.5 bg-amber-400"></div>
+              </div>
+              <div>
+                <div id="steer-angle" class="text-base font-mono font-bold text-white">0.0°</div>
+                <div class="text-[10px] text-slate-400">Deflection Angle</div>
+              </div>
+            </div>
+            <div class="text-right">
+              <div id="steer-volt" class="text-xs font-mono text-cyan-400">1.65 V</div>
+              <div class="text-[10px] text-slate-500">Center: 1.65V</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- EMERGENCY GPS / SMS PREVIEW -->
+        <div class="mt-2.5 pt-2.5 border-t border-slate-700">
+          <span class="text-[11px] font-bold text-slate-300 block mb-1">NEO-6M GPS & Cellular SIM800L</span>
+          <div id="sms-card" class="bg-slate-950 p-2 rounded border border-slate-800 text-[11px] text-slate-400 font-mono leading-tight">
+            <span class="text-emerald-400 font-semibold">[GPS Fix 3D Locked]</span><br>
+            Lat: 12.971598° N, Lon: 77.594566° E<br>
+            <span id="sms-status" class="text-slate-500 text-[10px]">SMS Engine: Standing by on Core 0</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE CONTROL PANEL -->
+    <div class="bg-slate-800 border border-slate-700 rounded-xl p-3.5 shadow">
+      <div class="flex items-center justify-between mb-2.5">
+        <span class="text-xs font-bold text-slate-200">Interactive Scenario Injection Controls</span>
+        <span class="text-[11px] text-slate-400">Inject physiological conditions to observe real-time FSM escalation:</span>
+      </div>
+
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <button id="btn-normal" onclick="setScenario('normal')" class="bg-emerald-700 hover:bg-emerald-600 active:scale-95 text-white text-xs font-semibold py-2 px-2.5 rounded-lg transition border border-emerald-500 flex flex-col items-center justify-center">
+          <span>🟢 Normal Drive</span>
+          <span class="text-[9px] opacity-80 mt-0.5">16 BPM + Active Steer</span>
+        </button>
+
+        <button id="btn-bump" onclick="setScenario('bump')" class="bg-amber-700 hover:bg-amber-600 active:scale-95 text-white text-xs font-semibold py-2 px-2.5 rounded-lg transition border border-amber-500 flex flex-col items-center justify-center">
+          <span>⚠️ Road Bumps</span>
+          <span class="text-[9px] opacity-80 mt-0.5">High Variance Shock</span>
+        </button>
+
+        <button id="btn-apnea" onclick="setScenario('apnea')" class="bg-rose-700 hover:bg-rose-600 active:scale-95 text-white text-xs font-semibold py-2 px-2.5 rounded-lg transition border border-rose-500 flex flex-col items-center justify-center">
+          <span>😴 Sleep / Apnea</span>
+          <span class="text-[9px] opacity-80 mt-0.5">0 BPM + Static Wheel</span>
+        </button>
+
+        <button id="btn-twitch" onclick="setScenario('twitch')" class="bg-sky-700 hover:bg-sky-600 active:scale-95 text-white text-xs font-semibold py-2 px-2.5 rounded-lg transition border border-sky-500 flex flex-col items-center justify-center">
+          <span>⚡ Steer Twitch</span>
+          <span class="text-[9px] opacity-80 mt-0.5">Driver Recovery Jerk</span>
+        </button>
+
+        <button id="btn-auto" onclick="toggleAuto()" class="col-span-2 sm:col-span-1 bg-purple-700 hover:bg-purple-600 active:scale-95 text-white text-xs font-semibold py-2 px-2.5 rounded-lg transition border border-purple-500 flex flex-col items-center justify-center">
+          <span id="auto-btn-text">🔄 Auto Scenario</span>
+          <span class="text-[9px] opacity-80 mt-0.5">Full 60s Cycle</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- LIVE ESP-IDF SERIAL CONSOLE -->
+    <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 shadow-inner">
+      <div class="flex items-center justify-between pb-1.5 border-b border-slate-800 mb-2">
+        <div class="flex items-center gap-1.5">
+          <span class="w-2.5 h-2.5 rounded-full bg-red-500"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+          <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
+          <span class="text-xs font-mono text-slate-400 ml-2 font-bold">ESP32 UART0 Serial Monitor (idf.py monitor)</span>
+        </div>
+        <button onclick="clearConsole()" class="text-[10px] text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700">Clear</button>
+      </div>
+      <div id="console" class="font-mono text-[11px] text-emerald-400 h-32 overflow-y-auto space-y-0.5 leading-snug">
+        <div>[0.000] I (MAIN_APP) SoC Target: ESP32 Dual Core @ 240 MHz</div>
+        <div>[0.010] I (MAIN_APP) Task Watchdog Timer (TWDT) enabled (5000 ms timeout)</div>
+        <div>[0.015] I (CORE1_TASKS) sensor_task started on Core 1 (Priority 6, Period 50 ms)</div>
+        <div>[0.020] I (CORE1_TASKS) dsp_task started on Core 1 (Priority 5)</div>
+        <div>[0.025] I (CORE1_TASKS) alert_task started on Core 1 (Priority 4)</div>
+        <div>[0.030] I (CORE0_TASKS) gps_gsm_task started on Core 0 (Priority 3)</div>
+        <div>[0.035] I (CORE0_TASKS) cloud_task started on Core 0 (Priority 2)</div>
+        <div>[0.050] I (STATE_MACHINE) FSM Initialized: Initial State = NORMAL (Cruising Speed 100%)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // State variables
+    let simTime = 0.0;
+    let mode = 'normal'; // 'normal', 'bump', 'apnea', 'twitch'
+    let isAuto = true;
+    let autoTimer = 0.0;
+
+    // FSM State
+    const STATE_NORMAL = 0, STATE_WARNING = 1, STATE_CRITICAL = 2, STATE_EMERGENCY = 3;
+    let currentState = STATE_NORMAL;
+    let warningTimer = 0.0;
+    let motorSpeed = 100.0;
+    let bpm = 16.0;
+    let steerAngle = 0.0;
+    let steerVoltage = 1.65;
+    let apneaTimer = 0.0;
+    let steerInactiveTimer = 0.0;
+    let isArtifact = false;
+
+    // Canvas buffer
+    const canvas = document.getElementById('wave-canvas');
+    const ctx = canvas.getContext('2d');
+    const waveHistory = new Array(150).fill(1.65);
+
+    function logConsole(tag, level, msg) {
+      const c = document.getElementById('console');
+      const div = document.createElement('div');
+      const timeStr = simTime.toFixed(3);
+      let colorClass = "text-emerald-400";
+      if (level === 'W') colorClass = "text-amber-400";
+      if (level === 'E') colorClass = "text-rose-400";
+      div.className = colorClass;
+      div.innerText = `[${timeStr}] ${level} (${tag}) ${msg}`;
+      c.appendChild(div);
+      c.scrollTop = c.scrollHeight;
+    }
+
+    function clearConsole() {
+      document.getElementById('console').innerHTML = '';
+    }
+
+    function setScenario(newMode) {
+      isAuto = false;
+      mode = newMode;
+      document.getElementById('auto-btn-text').innerText = '▶️ Auto Scenario';
+      logConsole('SIMULATOR', 'I', `User manually triggered scenario: [${newMode.toUpperCase()}]`);
+    }
+
+    function toggleAuto() {
+      isAuto = !isAuto;
+      document.getElementById('auto-btn-text').innerText = isAuto ? '🔄 Auto Scenario' : '▶️ Auto Scenario';
+      logConsole('SIMULATOR', 'I', isAuto ? 'Resumed 60-second automated cyclical simulation' : 'Paused automated cycle');
+    }
+
+    // 20 Hz simulation loop (every 50 ms)
+    setInterval(() => {
+      simTime += 0.05;
+      autoTimer = simTime % 60.0;
+
+      if (isAuto) {
+        if (autoTimer < 25.0) mode = 'normal';
+        else if (autoTimer < 35.0) mode = 'bump';
+        else if (autoTimer < 50.0) mode = 'apnea';
+        else mode = 'twitch';
+      }
+
+      // Generate raw signals
+      let rawBreath = 1.65;
+      isArtifact = false;
+
+      if (mode === 'normal') {
+        rawBreath = 1.65 + 0.40 * Math.sin(2.0 * Math.PI * 0.267 * simTime) + (0.02 * Math.sin(11 * simTime));
+        steerAngle = 15.0 * Math.sin(0.4 * simTime);
+        steerVoltage = 1.65 + (steerAngle / 90.0) * 1.65;
+        apneaTimer = 0.0;
+        steerInactiveTimer = 0.0;
+        bpm = 16.0 + 1.2 * Math.sin(0.1 * simTime);
+      } else if (mode === 'bump') {
+        const bump = (Math.sin(23 * simTime) > 0.5) ? 0.85 * Math.sin(45 * simTime) : 0.05;
+        rawBreath = 1.65 + 0.40 * Math.sin(2.0 * Math.PI * 0.267 * simTime) + bump;
+        steerAngle = 8.0 * Math.sin(0.3 * simTime);
+        steerVoltage = 1.65 + (steerAngle / 90.0) * 1.65;
+        isArtifact = (Math.abs(bump) > 0.2);
+        bpm = 16.0;
+      } else if (mode === 'apnea') {
+        rawBreath = 1.65 + 0.015 * Math.sin(0.05 * simTime); // Flatline
+        steerAngle = 0.0; // Static hold
+        steerVoltage = 1.65;
+        apneaTimer += 0.05;
+        steerInactiveTimer += 0.05;
+        if (apneaTimer >= 8.0) bpm = Math.max(0.0, bpm - 0.5);
+      } else if (mode === 'twitch') {
+        rawBreath = 1.65 + 0.55 * Math.sin(2.0 * Math.PI * 0.4 * simTime);
+        steerAngle = 38.0; // Sharp corrective twitch
+        steerVoltage = 1.65 + (steerAngle / 90.0) * 1.65;
+        apneaTimer = 0.0;
+        steerInactiveTimer = 0.0;
+        bpm = 22.0;
+      }
+
+      // Append to canvas history
+      waveHistory.push(rawBreath);
+      waveHistory.shift();
+
+      // State Machine Escalation Logic
+      const isIrregular = (apneaTimer >= 8.0 || bpm < 10 || bpm > 30);
+      const isInactive = (steerInactiveTimer >= 7.0);
+
+      const prevState = currentState;
+
+      if (currentState === STATE_NORMAL) {
+        if (isIrregular && isInactive) {
+          currentState = STATE_WARNING;
+          warningTimer = 0.0;
+          logConsole('STATE_MACHINE', 'W', 'STATE TRANSITION: [NORMAL] -> [WARNING] (Apnea & Inactivity detected)');
+        }
+      } else if (currentState === STATE_WARNING) {
+        if (!isInactive || !isIrregular) {
+          currentState = STATE_NORMAL;
+          logConsole('STATE_MACHINE', 'I', 'STATE TRANSITION: [WARNING] -> [NORMAL] (Driver recovered steering/breathing)');
+        } else {
+          warningTimer += 0.05;
+          if (warningTimer >= 5.0) {
+            currentState = STATE_CRITICAL;
+            logConsole('STATE_MACHINE', 'E', 'STATE TRANSITION: [WARNING] -> [CRITICAL] (5s timeout expired! Starting motor decel ramp)');
+          }
+        }
+      } else if (currentState === STATE_CRITICAL) {
+        if (!isInactive) {
+          currentState = STATE_NORMAL;
+          motorSpeed = 100.0;
+          logConsole('STATE_MACHINE', 'W', 'Emergency Steering Override in CRITICAL! Driver aborted decel -> Back to NORMAL');
+        } else {
+          // Linear deceleration ramp over 4.0s (100% -> 0% is -1.25% per 50ms)
+          motorSpeed = Math.max(0.0, motorSpeed - 1.25);
+          if (motorSpeed <= 0.01) {
+            currentState = STATE_EMERGENCY;
+            motorSpeed = 0.0;
+            logConsole('STATE_MACHINE', 'E', 'STATE TRANSITION: [CRITICAL] -> [EMERGENCY] (Speed 0%! Vehicle Halted)');
+            logConsole('CORE0_TASKS', 'E', 'EMERGENCY EVENT BIT RECEIVED: SIM800L Dispatching SMS to +919876543210...');
+            logConsole('SIM800L', 'I', 'SMS Sent: "[EMERGENCY] Driver Drowsiness Detected! Loc: https://maps.google.com/?q=12.971598,77.594566"');
+            logConsole('CLOUD_TELEMETRY', 'I', 'MQTT High-Priority PUB to vehicle/drowsiness/emergency (QoS 1)');
+          }
+        }
+      } else if (currentState === STATE_EMERGENCY) {
+        if (!isInactive && !isIrregular) {
+          currentState = STATE_NORMAL;
+          motorSpeed = 100.0;
+          logConsole('STATE_MACHINE', 'I', 'Confirmed Driver Recovery post-emergency -> Restoring NORMAL @ 100% Speed');
+        }
+      }
+
+      // Update UI components
+      updateUI();
+      drawWaveform();
+    }, 50);
+
+    function updateUI() {
+      // Clock
+      const mins = Math.floor(simTime / 60);
+      const secs = (simTime % 60).toFixed(1);
+      document.getElementById('sim-clock').innerText = `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+
+      // State Badge & Dot
+      const badge = document.getElementById('state-badge');
+      const dot = document.getElementById('state-dot');
+      const desc = document.getElementById('state-desc');
+
+      if (currentState === STATE_NORMAL) {
+        badge.innerText = 'NORMAL';
+        badge.className = 'text-base font-extrabold text-emerald-400 tracking-wide';
+        dot.className = 'w-3.5 h-3.5 rounded-full bg-emerald-500';
+        desc.innerText = 'Cruising @ 100% speed, normal breathing';
+      } else if (currentState === STATE_WARNING) {
+        badge.innerText = 'WARNING';
+        badge.className = 'text-base font-extrabold text-amber-400 tracking-wide';
+        dot.className = 'w-3.5 h-3.5 rounded-full bg-amber-500 animate-ping';
+        desc.innerText = `Drowsiness warning! Countdown: ${(5.0 - warningTimer).toFixed(1)}s`;
+      } else if (currentState === STATE_CRITICAL) {
+        badge.innerText = 'CRITICAL';
+        badge.className = 'text-base font-extrabold text-rose-500 tracking-wide';
+        dot.className = 'w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping';
+        desc.innerText = 'No response! Controlled PWM deceleration active';
+      } else if (currentState === STATE_EMERGENCY) {
+        badge.innerText = 'EMERGENCY';
+        badge.className = 'text-base font-extrabold text-purple-400 tracking-wide animate-pulse';
+        dot.className = 'w-3.5 h-3.5 rounded-full bg-purple-500 animate-ping';
+        desc.innerText = 'Vehicle stopped! SMS & MQTT alerts dispatched';
+      }
+
+      // Respiration
+      document.getElementById('bpm-val').innerText = bpm.toFixed(1);
+      const apneaBadge = document.getElementById('apnea-badge');
+      if (apneaTimer >= 8.0) {
+        apneaBadge.innerText = `APNEA (${apneaTimer.toFixed(1)}s)`;
+        apneaBadge.className = 'px-1.5 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-700 font-mono text-[10px] animate-pulse';
+      } else {
+        apneaBadge.innerText = 'Normal Rhythm';
+        apneaBadge.className = 'px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 font-mono text-[10px]';
+      }
+
+      // Motor Speed
+      document.getElementById('speed-val').innerText = `${motorSpeed.toFixed(0)}%`;
+      const bar = document.getElementById('speed-bar');
+      bar.style.width = `${motorSpeed}%`;
+      bar.className = (motorSpeed > 50) ? 'bg-emerald-500 h-full transition-all' : (motorSpeed > 10) ? 'bg-amber-500 h-full transition-all' : 'bg-rose-500 h-full transition-all';
+
+      // Steering
+      document.getElementById('steer-angle').innerText = `${steerAngle > 0 ? '+' : ''}${steerAngle.toFixed(1)}°`;
+      document.getElementById('steer-volt').innerText = `${steerVoltage.toFixed(2)} V`;
+      document.getElementById('steering-wheel').style.transform = `rotate(${steerAngle}deg)`;
+      const steerStatus = document.getElementById('steer-status');
+      if (steerInactiveTimer >= 7.0) {
+        steerStatus.innerText = `Inactive (${steerInactiveTimer.toFixed(1)}s)`;
+        steerStatus.className = 'text-[10px] text-rose-400 font-semibold';
+      } else {
+        steerStatus.innerText = 'Active Movement';
+        steerStatus.className = 'text-[10px] text-emerald-400 font-semibold';
+      }
+
+      // Actuators
+      const bIcon = document.getElementById('buzzer-icon');
+      const bText = document.getElementById('buzzer-text');
+      const lWarn = document.getElementById('led-warn');
+      const lCrit = document.getElementById('led-crit');
+
+      if (currentState === STATE_NORMAL) {
+        bIcon.className = 'w-5 h-5 rounded-full bg-slate-700 flex items-center justify-center text-xs text-slate-400';
+        bText.innerText = 'OFF';
+        lWarn.className = 'w-3.5 h-3.5 rounded-full bg-slate-700 border border-slate-600';
+        lCrit.className = 'w-3.5 h-3.5 rounded-full bg-slate-700 border border-slate-600';
+      } else if (currentState === STATE_WARNING) {
+        bIcon.className = 'w-5 h-5 rounded-full bg-amber-500 text-slate-950 flex items-center justify-center text-xs flash-2hz';
+        bText.innerText = '2 Hz Pulsing';
+        lWarn.className = 'w-3.5 h-3.5 rounded-full bg-amber-400 border border-amber-300 flash-2hz shadow-[0_0_8px_#f59e0b]';
+        lCrit.className = 'w-3.5 h-3.5 rounded-full bg-slate-700 border border-slate-600';
+      } else if (currentState === STATE_CRITICAL) {
+        bIcon.className = 'w-5 h-5 rounded-full bg-rose-600 text-white flex items-center justify-center text-xs flash-5hz';
+        bText.innerText = '5 Hz Alarm';
+        lWarn.className = 'w-3.5 h-3.5 rounded-full bg-amber-400 border border-amber-300 flash-5hz shadow-[0_0_8px_#f59e0b]';
+        lCrit.className = 'w-3.5 h-3.5 rounded-full bg-rose-600 border border-rose-400 flash-5hz shadow-[0_0_8px_#ef4444]';
+      } else if (currentState === STATE_EMERGENCY) {
+        bIcon.className = 'w-5 h-5 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs animate-bounce';
+        bText.innerText = 'SIREN';
+        lWarn.className = 'w-3.5 h-3.5 rounded-full bg-amber-400 border border-amber-300 flash-5hz shadow-[0_0_8px_#f59e0b]';
+        lCrit.className = 'w-3.5 h-3.5 rounded-full bg-rose-600 border border-rose-400 flash-5hz shadow-[0_0_8px_#ef4444]';
+      }
+
+      // Artifact indicator
+      const artBadge = document.getElementById('artifact-indicator');
+      if (isArtifact) {
+        artBadge.innerText = 'BUMP ARTIFACT DETECTED (GATED)';
+        artBadge.className = 'text-[10px] bg-amber-900/80 text-amber-300 border border-amber-600 px-1.5 py-0.5 rounded font-mono font-bold animate-pulse';
+      } else {
+        artBadge.innerText = 'Clean Waveform';
+        artBadge.className = 'text-[10px] bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono';
+      }
+
+      // SMS Status
+      const smsStatus = document.getElementById('sms-status');
+      if (currentState === STATE_EMERGENCY) {
+        smsStatus.innerText = 'SMS Sent to +919876543210 (Google Maps Alert)';
+        smsStatus.className = 'text-purple-300 text-[10px] font-semibold';
+      } else {
+        smsStatus.innerText = 'SMS Engine: Standing by on Core 0';
+        smsStatus.className = 'text-slate-500 text-[10px]';
+      }
+    }
+
+    function drawWaveform() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Grid lines
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let y = 30; y < canvas.height; y += 35) {
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+      }
+      ctx.stroke();
+
+      // Center baseline
+      ctx.strokeStyle = '#334155';
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(0, canvas.height / 2);
+      ctx.lineTo(canvas.width, canvas.height / 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw signal line
+      ctx.beginPath();
+      ctx.lineWidth = 2.2;
+      ctx.strokeStyle = isArtifact ? '#f59e0b' : (currentState >= STATE_WARNING ? '#f43f5e' : '#38bdf8');
+
+      const step = canvas.width / (waveHistory.length - 1);
+      const midY = canvas.height / 2;
+      const scale = 55.0; // scale factor
+
+      for (let i = 0; i < waveHistory.length; i++) {
+        const x = i * step;
+        const v = waveHistory[i];
+        const y = midY - (v - 1.65) * scale;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    // ==========================================
+    // Web Serial API - Live ESP32 USB Connection
+    // ==========================================
+    let serialPort = null;
+    let serialReader = null;
+    let isSerialConnected = false;
+
+    async function toggleWebSerial() {
+      if (!("serial" in navigator)) {
+        alert("Web Serial API is supported in Google Chrome, Microsoft Edge, and Opera.\nPlease open this dashboard in Chrome or Edge!");
+        return;
+      }
+
+      if (isSerialConnected) {
+        try {
+          if (serialReader) await serialReader.cancel();
+          if (serialPort) await serialPort.close();
+        } catch (e) {
+          console.error(e);
+        }
+        isSerialConnected = false;
+        document.getElementById('serial-text').innerText = '🔌 Connect Real ESP32 (COM6)';
+        document.getElementById('serial-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-300 animate-ping';
+        document.getElementById('btn-web-serial').className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-all shadow-md shadow-emerald-950 border border-emerald-400/40 cursor-pointer';
+        logConsole('SYSTEM', 'I', 'Disconnected from physical ESP32. Returned to local simulation mode.');
+        return;
+      }
+
+      try {
+        serialPort = await navigator.serial.requestPort();
+        await serialPort.open({ baudRate: 115200 });
+        isSerialConnected = true;
+        isAuto = false; // Pause autonomous timer so hardware takes priority
+        document.getElementById('serial-text').innerText = '🟢 ESP32 LIVE (Click to Disconnect)';
+        document.getElementById('serial-dot').className = 'w-2.5 h-2.5 rounded-full bg-emerald-300';
+        document.getElementById('btn-web-serial').className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white transition-all shadow-md shadow-blue-950 border border-blue-400/40 cursor-pointer';
+        logConsole('SYSTEM', 'I', 'SUCCESS: Connected to physical ESP32 at 115200 baud! Receiving live hardware telemetry...');
+
+        readSerialLoop();
+      } catch (err) {
+        console.error("Serial connection error:", err);
+        if (err.name !== 'NotFoundError') {
+          alert('Could not open serial port: ' + err.message);
+        }
+      }
+    }
+
+    async function readSerialLoop() {
+      const textDecoder = new TextDecoderStream();
+      const readableStreamClosed = serialPort.readable.pipeTo(textDecoder.writable);
+      serialReader = textDecoder.readable.getReader();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { value, done } = await serialReader.read();
+          if (done) break;
+          if (value) {
+            buffer += value;
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Retain incomplete remainder
+            for (const line of lines) {
+              const clean = line.trim();
+              if (clean) processHardwareSerialLine(clean);
+            }
+          }
+        }
+      } catch (err) {
+        console.error("Stream error:", err);
+      } finally {
+        if (serialReader) serialReader.releaseLock();
+      }
+    }
+
+    function processHardwareSerialLine(line) {
+      // Append raw log to console
+      const c = document.getElementById('console');
+      const div = document.createElement('div');
+      div.className = line.includes('E (') ? 'text-rose-400' : (line.includes('W (') ? 'text-amber-400' : 'text-emerald-400');
+      div.innerText = line;
+      c.appendChild(div);
+      c.scrollTop = c.scrollHeight;
+
+      // 1. Parse FSM diagnostic telemetry:
+      // Example: I (2770) CORE1_TASKS: [FSM: 0] BPM=16.0 (Irreg:0, Apnea:0) | Steer=14.3 deg (Inact:0) | Speed=100% | Latency=13004.3 us
+      const fsmMatch = line.match(/\[FSM:\s*(\d+)\]\s*BPM=([0-9.]+).*Steer=([0-9.-]+)\s*deg.*Speed=([0-9.]+)%.*Latency=([0-9.]+)\s*us/);
+      if (fsmMatch) {
+        currentState = parseInt(fsmMatch[1]);
+        bpm = parseFloat(fsmMatch[2]);
+        steerAngle = parseFloat(fsmMatch[3]);
+        motorSpeed = parseFloat(fsmMatch[4]);
+        const latencyUs = parseFloat(fsmMatch[5]);
+
+        document.getElementById('bpm-val').innerText = bpm.toFixed(1);
+        document.getElementById('speed-val').innerText = motorSpeed.toFixed(0) + '%';
+        document.getElementById('speed-bar').style.width = motorSpeed + '%';
+        document.getElementById('latency-val').innerText = `Core 1 Latency: ${latencyUs.toFixed(0)} µs`;
+
+        // Update FSM badge
+        const badge = document.getElementById('state-badge');
+        const dot = document.getElementById('state-dot');
+        const desc = document.getElementById('state-desc');
+        if (currentState === STATE_NORMAL) {
+          badge.innerText = 'NORMAL';
+          badge.className = 'text-base font-extrabold text-emerald-400 tracking-wide';
+          dot.className = 'w-3.5 h-3.5 rounded-full bg-emerald-500';
+          desc.innerText = 'Regular breathing, active steering';
+        } else if (currentState === STATE_WARNING) {
+          badge.innerText = 'WARNING';
+          badge.className = 'text-base font-extrabold text-amber-400 tracking-wide';
+          dot.className = 'w-3.5 h-3.5 rounded-full bg-amber-500 animate-ping';
+          desc.innerText = 'Buzzer 2Hz pulse, driver alerted';
+        } else if (currentState === STATE_CRITICAL) {
+          badge.innerText = 'CRITICAL';
+          badge.className = 'text-base font-extrabold text-rose-400 tracking-wide';
+          dot.className = 'w-3.5 h-3.5 rounded-full bg-rose-500 animate-ping';
+          desc.innerText = 'Rapid deceleration, high alert';
+        } else {
+          badge.innerText = 'EMERGENCY';
+          badge.className = 'text-base font-extrabold text-rose-500 tracking-wide';
+          dot.className = 'w-3.5 h-3.5 rounded-full bg-rose-600 animate-ping';
+          desc.innerText = 'Vehicle stopped, hazards & SMS sent';
+        }
+
+        // Update Steering needle
+        document.getElementById('steer-angle').innerText = (steerAngle >= 0 ? '+' : '') + steerAngle.toFixed(1) + '°';
+        const needle = document.getElementById('steer-needle');
+        if (needle) needle.style.transform = `rotate(${steerAngle}deg)`;
+      }
+
+      // 2. Parse MQTT JSON Telemetry:
+      if (line.includes('{"state":')) {
+        const sIdx = line.indexOf('{');
+        try {
+          const payload = JSON.parse(line.slice(sIdx));
+          if (payload.lat && payload.lon) {
+            document.getElementById('gps-coords').innerText = `Lat: ${payload.lat.toFixed(6)}° N, Lon: ${payload.lon.toFixed(6)}° E`;
+          }
+        } catch(e) {}
+      }
+    }
+  </script>
+</body>
+</html>
