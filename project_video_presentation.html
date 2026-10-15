@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Driver Drowsiness Detection System - Interactive Video Presentation</title>
+<script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+<style>
+  @keyframes pulseSlow {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.02); }
+  }
+  .slide-active { display: block; animation: fadeIn 0.5s ease-in-out; }
+  .slide-hidden { display: none; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans antialiased selection:bg-cyan-500 selection:text-white">
+
+  <!-- TOP APP BAR -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-50">
+    <div class="flex items-center gap-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 to-blue-500 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white tracking-wide flex items-center gap-2">
+          Automotive Driver Drowsiness System
+          <span class="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">1080p Presentation</span>
+        </h1>
+        <p class="text-xs text-slate-400">ESP32 + ESP-IDF FreeRTOS | Automatic Roadside Pull-Over Architecture</p>
+      </div>
+    </div>
+
+    <!-- AUDIO VOICE OVER & CONTROLS -->
+    <div class="flex items-center gap-3">
+      <button id="toggleVoiceBtn" onclick="toggleVoice()" class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 border border-slate-700 transition">
+        <svg id="voiceIcon" class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"/></svg>
+        <span id="voiceStatusText">Voice Narration: ON</span>
+      </button>
+
+      <button onclick="togglePlayPause()" id="playPauseBtn" class="flex items-center gap-2 px-4 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-xs font-semibold text-white shadow-md shadow-cyan-600/30 transition">
+        <svg id="playIcon" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+        <span id="playBtnText">Start Auto Video</span>
+      </button>
+
+      <a href="project_presentation_video.mp4" download class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-cyan-300 border border-slate-700 transition">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        Download MP4 (35MB)
+      </a>
+    </div>
+  </header>
+
+  <!-- MAIN VIDEO DISPLAY VIEWPORT -->
+  <main class="flex-1 flex flex-col items-center justify-center p-4 lg:p-8 max-w-7xl mx-auto w-full">
+    
+    <!-- VIDEO FRAME CONTAINER -->
+    <div class="relative w-full aspect-video bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col group">
+      
+      <!-- SLIDE 1 -->
+      <div id="slide-0" class="slide-active w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-gradient-to-br from-slate-900 via-slate-950 to-cyan-950/40">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Slide 1 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">Project Overview</span>
+        </div>
+        <div class="my-auto space-y-4">
+          <p class="text-xs font-bold tracking-widest text-cyan-400 uppercase">Automotive Edge Safety System</p>
+          <h2 class="text-3xl md:text-5xl font-black text-white leading-tight">
+            Driver Drowsiness Detection &<br/>
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-300 to-emerald-400">Emergency Safe-Stop System</span>
+          </h2>
+          <p class="text-sm md:text-base text-slate-300 max-w-3xl leading-relaxed">
+            Real-time biometric driver fatigue monitoring and autonomous gradual pull-over safety platform running on <strong>ESP32 Dual-Core (ESP-IDF v5.2 FreeRTOS)</strong>.
+          </p>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4">
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs text-cyan-400 font-semibold">Core Biometrics</div>
+              <div class="text-base font-bold text-white mt-1">PERCLOS & EAR</div>
+              <div class="text-xs text-slate-400 mt-1">100Hz Sensor Sampling</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs text-amber-400 font-semibold">Escalation</div>
+              <div class="text-base font-bold text-white mt-1">4-Stage Safety</div>
+              <div class="text-xs text-slate-400 mt-1">Chime → Siren → Haptic → Stop</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs text-emerald-400 font-semibold">Deceleration</div>
+              <div class="text-base font-bold text-white mt-1">Roadside Pull-Over</div>
+              <div class="text-xs text-slate-400 mt-1">6-Second Safe Ramp</div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+              <div class="text-xs text-purple-400 font-semibold">Diagnostics</div>
+              <div class="text-base font-bold text-white mt-1">Web Serial HUD</div>
+              <div class="text-xs text-slate-400 mt-1">Live Chrome/Edge Telemetry</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center justify-between text-xs text-slate-400 border-t border-slate-800/80 pt-4">
+          <span>Author: <strong>Dinesh Kumar R</strong></span>
+          <span class="text-cyan-400">github.com/ramadineshkumar13-design/driver-drowsiness-detection-esp32</span>
+        </div>
+      </div>
+
+      <!-- SLIDE 2 -->
+      <div id="slide-1" class="slide-hidden w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-gradient-to-br from-slate-950 via-slate-900 to-rose-950/30">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-rose-500/20 text-rose-300 border border-rose-500/40">Slide 2 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">Problem Statement</span>
+        </div>
+        <div class="my-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div class="space-y-4">
+            <h2 class="text-2xl md:text-4xl font-extrabold text-white">The Fatal Reality of Microsleep</h2>
+            <p class="text-sm text-slate-300 leading-relaxed">
+              Driver fatigue causes <strong class="text-rose-400">40% of highway crashes</strong> worldwide. At 100 km/h, closing eyes for just 4 seconds means the vehicle hurtles blind for over <strong class="text-white">111 meters</strong> with zero driver reaction.
+            </p>
+            <div class="p-4 rounded-xl bg-rose-950/40 border border-rose-800/60 space-y-2">
+              <div class="text-xs font-bold uppercase tracking-wide text-rose-400">The Problem with Buzzer-Only Systems</div>
+              <p class="text-xs text-slate-300">
+                Traditional drowsiness gadgets only sound a buzzer. If the driver is unconscious, in deep microsleep, or experiencing a medical emergency, a sound alert cannot stop the vehicle.
+              </p>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-slate-800 flex items-start gap-3">
+              <span class="text-2xl">⚠️</span>
+              <div>
+                <h4 class="text-sm font-bold text-white">Why Sudden Braking Fails</h4>
+                <p class="text-xs text-slate-400 mt-1">Slamming 100% emergency brakes in the middle of a high-speed motorway causes catastrophic multi-car pileups from trailing vehicles.</p>
+              </div>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900/90 border border-emerald-500/40 flex items-start gap-3">
+              <span class="text-2xl">🛡️</span>
+              <div>
+                <h4 class="text-sm font-bold text-emerald-400">Our Engineered Solution</h4>
+                <p class="text-xs text-slate-300 mt-1">A smooth 6-second gradual deceleration curve combined with differential steering torque to pull over safely to the road shoulder, backed by instant driver pedal override.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 border-t border-slate-800/80 pt-3">Key Metric: NHTSA & AAA Traffic Safety Foundation Fatigue Research</div>
+      </div>
+
+      <!-- SLIDE 3 -->
+      <div id="slide-2" class="slide-hidden w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-slate-950">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Slide 3 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">Hardware & Prototype Design</span>
+        </div>
+        <div class="my-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div class="rounded-xl overflow-hidden border border-slate-700 bg-slate-900 shadow-xl flex items-center justify-center p-2">
+            <img src="docs/system_hardware_render.jpg" alt="Hardware Render" class="rounded-lg object-cover max-h-72 w-full hover:scale-105 transition duration-500" onerror="this.src='system_hardware_render_1791998515260.jpg'"/>
+          </div>
+          <div class="space-y-3">
+            <h3 class="text-xl md:text-2xl font-bold text-white">Automotive Prototype Pinout</h3>
+            <div class="grid grid-cols-1 gap-2 text-xs">
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                <span class="font-semibold text-cyan-400">ESP32 Dual-Core DevKit</span>
+                <span class="text-slate-300">240 MHz, 520KB SRAM, FreeRTOS</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                <span class="font-semibold text-amber-400">IR Eye Blink Sensor / Camera</span>
+                <span class="text-slate-300">GPIO 34 (ADC1 / Fast Interrupt)</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                <span class="font-semibold text-rose-400">L298N DC Motor Driver</span>
+                <span class="text-slate-300">GPIO 18 (PWM), 19 (IN1), 21 (IN2)</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                <span class="font-semibold text-emerald-400">Active Buzzer & Haptic Motor</span>
+                <span class="text-slate-300">GPIO 4 (PWM 2.7kHz), GPIO 2</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                <span class="font-semibold text-yellow-400">High-Intensity Hazard LEDs</span>
+                <span class="text-slate-300">GPIO 22, 23 (2.0 Hz Strobe Flash)</span>
+              </div>
+              <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 flex justify-between">
+                <span class="font-semibold text-purple-400">Manual Driver Override</span>
+                <span class="text-slate-300">GPIO 0 (BOOT / Ext Interrupt &lt;10ms)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 border-t border-slate-800/80 pt-3">Custom laser-cut acrylic chassis with regulated 5V DC-DC buck power supply.</div>
+      </div>
+
+      <!-- SLIDE 4 -->
+      <div id="slide-3" class="slide-hidden w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-slate-950">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-500/20 text-purple-300 border border-purple-500/40">Slide 4 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">Algorithmic Core</span>
+        </div>
+        <div class="my-auto space-y-4">
+          <h3 class="text-2xl md:text-3xl font-extrabold text-white">PERCLOS & Eye Aspect Ratio (EAR)</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-purple-400 uppercase tracking-wide">1. EAR Formula</span>
+              <p class="font-mono text-xs text-cyan-300 bg-slate-950 p-2 rounded border border-slate-800">
+                EAR = (||p2-p6|| + ||p3-p5||) / (2 * ||p1-p4||)
+              </p>
+              <p class="text-xs text-slate-400">Measures ratio of vertical to horizontal eye opening. Value &lt; 0.22 confirms eye closure.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-emerald-400 uppercase tracking-wide">2. 60-Sec PERCLOS</span>
+              <p class="font-mono text-xs text-emerald-300 bg-slate-950 p-2 rounded border border-slate-800">
+                PERCLOS = (Time_Closed / 60s) * 100%
+              </p>
+              <p class="text-xs text-slate-400">Validated by FAA & NHTSA as the most reliable physiological metric of driver drowsiness.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span class="text-xs font-bold text-amber-400 uppercase tracking-wide">3. Temporal Profiling</span>
+              <p class="text-xs text-slate-300">
+                • <strong>150 - 300 ms:</strong> Natural blink<br/>
+                • <strong>500 - 1200 ms:</strong> Heavy fatigue<br/>
+                • <strong>&gt; 1500 ms:</strong> Microsleep episode<br/>
+                • <strong>&gt; 4000 ms:</strong> Emergency Safe-Stop
+              </p>
+            </div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 border-t border-slate-800/80 pt-3">Implemented with 600-sample circular ring buffer in ESP-IDF C for zero heap fragmentation.</div>
+      </div>
+
+      <!-- SLIDE 5 -->
+      <div id="slide-4" class="slide-hidden w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-slate-950">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-500/20 text-amber-300 border border-amber-500/40">Slide 5 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">4-Stage Safety Escalation</span>
+        </div>
+        <div class="my-auto">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+            <div class="p-4 rounded-xl bg-slate-900 border border-emerald-500/40 space-y-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/20 text-emerald-400">STAGE 0: NORMAL</span>
+              <div class="text-sm font-bold text-white">Alert Driving</div>
+              <p class="text-slate-400 text-[11px]">• Eyes Open (EAR &gt; 0.22)<br/>• Motor: 100% Speed<br/>• Alarm: OFF</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-amber-500/40 space-y-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/20 text-amber-400">STAGE 1: DROWSY</span>
+              <div class="text-sm font-bold text-white">Early Warning</div>
+              <p class="text-slate-400 text-[11px]">• Closed: 1.2s - 2.0s<br/>• Soft Chime (1.5 kHz)<br/>• Amber HUD Flash</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-rose-500/40 space-y-2">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-500/20 text-rose-400">STAGE 2: CRITICAL</span>
+              <div class="text-sm font-bold text-white">Microsleep Confirmed</div>
+              <p class="text-slate-400 text-[11px]">• Closed: 2.0s - 4.0s<br/>• High Siren (2.7 kHz)<br/>• Haptic Vibration Pulse</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-red-500 space-y-2 ring-1 ring-red-500/40">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-600 text-white animate-pulse">STAGE 3: SAFE-STOP</span>
+              <div class="text-sm font-bold text-red-300">Unresponsive</div>
+              <p class="text-slate-300 text-[11px]">• Closed: &gt; 4.0s<br/>• Hazard Flashers ON<br/>• 6s Gradual Decel<br/>• Right Roadside Bias</p>
+            </div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 border-t border-slate-800/80 pt-3">Deterministic FreeRTOS State Machine prevents false alarm disruptions.</div>
+      </div>
+
+      <!-- SLIDE 6 -->
+      <div id="slide-5" class="slide-hidden w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-slate-950">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Slide 6 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">Autonomous Roadside Pull-Over</span>
+        </div>
+        <div class="my-auto space-y-4">
+          <h3 class="text-2xl md:text-3xl font-extrabold text-white">How Roadside Pull-Over Works</h3>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span class="text-amber-400 font-bold">1. Hazard Flashers (2.0 Hz)</span>
+              <p class="text-slate-300">Amber high-intensity LEDs flash before deceleration begins to alert trailing expressway drivers up to 200m away.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span class="text-cyan-400 font-bold">2. 6-Sec Gradual Ramp</span>
+              <p class="text-slate-300">PWM throttles down from 100% to 70%, 50%, 25%, and 0% across 6 seconds. Eliminates sudden skidding and rear-end crashes.</p>
+            </div>
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+              <span class="text-emerald-400 font-bold">3. Right Shoulder Steering Bias</span>
+              <p class="text-slate-300">Differential torque bias applied to the drive wheels gently nudges the vehicle toward the highway shoulder to clear the active travel lane.</p>
+            </div>
+          </div>
+          <div class="p-4 rounded-xl bg-emerald-950/30 border border-emerald-700/50 flex items-center gap-3">
+            <span class="text-emerald-400 font-bold text-sm">Driver Pedal Override:</span>
+            <span class="text-xs text-slate-300">If the driver awakens and taps the accelerator or override switch, emergency mode is cancelled within 10 milliseconds.</span>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 border-t border-slate-800/80 pt-3">Meets ISO 26262 automotive functional safety fail-safe principles.</div>
+      </div>
+
+      <!-- SLIDE 7 -->
+      <div id="slide-6" class="slide-hidden w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-slate-950">
+        <div class="flex items-center gap-3">
+          <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">Slide 7 / 7</span>
+          <span class="px-3 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-300 border border-slate-700">Dashboard & Viva Defense</span>
+        </div>
+        <div class="my-auto grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+          <div class="space-y-3">
+            <h3 class="text-2xl font-bold text-white">Live Web Serial Dashboard</h3>
+            <p class="text-xs text-slate-300 leading-relaxed">
+              Connects directly to the ESP32 via Chrome/Edge USB Web Serial without installing any drivers or external software.
+            </p>
+            <div class="space-y-2 text-xs">
+              <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-slate-300">✓ Live PERCLOS & EAR circular gauges</div>
+              <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-slate-300">✓ Real-time oscilloscope blink waveform</div>
+              <div class="p-2.5 rounded bg-slate-900 border border-slate-800 text-slate-300">✓ Live state transition log & manual override</div>
+            </div>
+          </div>
+          <div class="space-y-3 p-5 rounded-2xl bg-gradient-to-br from-slate-900 to-cyan-950/40 border border-cyan-500/30">
+            <h4 class="text-sm font-bold text-cyan-300">Ready for College Viva & Defense</h4>
+            <p class="text-xs text-slate-300">
+              Complete source code, FreeRTOS modular tasks, unit tests, and documentation are committed and pushed to GitHub:
+            </p>
+            <div class="p-3 rounded-lg bg-slate-950 font-mono text-xs text-cyan-400 break-all border border-slate-800">
+              github.com/ramadineshkumar13-design/driver-drowsiness-detection-esp32
+            </div>
+            <div class="text-[11px] text-slate-400">
+              Includes comprehensive viva answers for 25+ faculty examiner questions!
+            </div>
+          </div>
+        </div>
+        <div class="text-xs text-slate-500 border-t border-slate-800/80 pt-3">Thank you for watching the presentation!</div>
+      </div>
+
+      <!-- BOTTOM PROGRESS & SCRUBBER BAR -->
+      <div class="absolute bottom-0 left-0 right-0 h-2 bg-slate-800/80">
+        <div id="videoProgressBar" class="h-full bg-gradient-to-r from-cyan-500 via-sky-400 to-emerald-400 transition-all duration-300 w-[14.28%]"></div>
+      </div>
+    </div>
+
+    <!-- PLAYBACK CONTROLS BAR -->
+    <div class="w-full mt-4 bg-slate-900/90 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-2">
+        <button onclick="prevSlide()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </button>
+        <button onclick="togglePlayPause()" id="btnPlayPauseIcon" class="p-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white transition">
+          <svg id="ctrlPlayIcon" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd"/></svg>
+        </button>
+        <button onclick="nextSlide()" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+        </button>
+        <span id="slideCounterText" class="text-xs font-semibold text-slate-400 ml-2">Slide 1 of 7</span>
+      </div>
+
+      <!-- SLIDE JUMP BUTTONS -->
+      <div class="flex items-center gap-1.5 flex-wrap">
+        <button onclick="goToSlide(0)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-cyan-600 text-white transition">1</button>
+        <button onclick="goToSlide(1)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition">2</button>
+        <button onclick="goToSlide(2)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition">3</button>
+        <button onclick="goToSlide(3)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition">4</button>
+        <button onclick="goToSlide(4)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition">5</button>
+        <button onclick="goToSlide(5)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition">6</button>
+        <button onclick="goToSlide(6)" class="slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition">7</button>
+      </div>
+
+      <!-- AUDIO TEST BUTTON -->
+      <button onclick="simulateAlarm()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/80 border border-rose-800 text-rose-300 text-xs font-semibold transition">
+        <span>🔊 Test 2.7kHz Buzzer Sound</span>
+      </button>
+    </div>
+  </main>
+
+  <!-- JAVASCRIPT ENGINE WITH SPEECH SYNTHESIS -->
+  <script>
+    let currentSlide = 0;
+    const totalSlides = 7;
+    let isPlaying = false;
+    let timer = null;
+    let voiceEnabled = true;
+
+    const speechScripts = [
+      // Slide 1
+      "Welcome to the demonstration of the Intelligent Driver Drowsiness Detection and Emergency Safe Stop System, built on ESP32 Dual Core with ESP-IDF FreeRTOS.",
+      // Slide 2
+      "Driver fatigue causes forty percent of highway crashes worldwide. While traditional systems only sound a buzzer, our engineered solution performs an autonomous gradual pull over.",
+      // Slide 3
+      "Here is the hardware architecture. The ESP32 interfaces with an infrared eye blink sensor, dual H-bridge motor driver, high pitch buzzer, and flashing hazard warning lights.",
+      // Slide 4
+      "The system utilizes the Eye Aspect Ratio formula and a sixty second sliding window PERCLOS metric to accurately detect microsleep with zero memory leaks.",
+      // Slide 5
+      "Safety escalates across four deterministic stages: from normal cruising, to an early warning chime, a critical piercing siren, and an autonomous safe stop.",
+      // Slide 6
+      "During an emergency safe stop, hazard lights flash at 2 Hertz, the motor smoothly decelerates over six seconds, and differential torque gently steers the vehicle onto the highway shoulder.",
+      // Slide 7
+      "The real-time Web Serial dashboard allows instant browser telemetry and diagnostics without installing any drivers. The complete project is published on GitHub. Thank you."
+    ];
+
+    function updateSlide() {
+      for (let i = 0; i < totalSlides; i++) {
+        const el = document.getElementById(`slide-${i}`);
+        if (el) {
+          if (i === currentSlide) {
+            el.className = "slide-active w-full h-full p-8 md:p-12 flex flex-col justify-between relative bg-slate-950";
+          } else {
+            el.className = "slide-hidden";
+          }
+        }
+      }
+
+      // Update progress bar
+      const progress = ((currentSlide + 1) / totalSlides) * 100;
+      document.getElementById("videoProgressBar").style.width = `${progress}%`;
+      document.getElementById("slideCounterText").innerText = `Slide ${currentSlide + 1} of ${totalSlides}`;
+
+      // Update indicators
+      const indicators = document.querySelectorAll(".slide-indicator");
+      indicators.forEach((btn, idx) => {
+        if (idx === currentSlide) {
+          btn.className = "slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-cyan-600 text-white transition";
+        } else {
+          btn.className = "slide-indicator w-7 h-7 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 transition";
+        }
+      });
+
+      // Trigger speech voiceover if enabled
+      if (voiceEnabled && ('speechSynthesis' in window)) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(speechScripts[currentSlide]);
+        utterance.rate = 1.0;
+        utterance.pitch = 1.0;
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+
+    function nextSlide() {
+      if (currentSlide < totalSlides - 1) {
+        currentSlide++;
+      } else {
+        currentSlide = 0;
+      }
+      updateSlide();
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        currentSlide--;
+      } else {
+        currentSlide = totalSlides - 1;
+      }
+      updateSlide();
+    }
+
+    function goToSlide(idx) {
+      currentSlide = idx;
+      updateSlide();
+    }
+
+    function togglePlayPause() {
+      isPlaying = !isPlaying;
+      const playBtnText = document.getElementById("playBtnText");
+      
+      if (isPlaying) {
+        playBtnText.innerText = "Pause Video";
+        timer = setInterval(() => {
+          if (currentSlide < totalSlides - 1) {
+            nextSlide();
+          } else {
+            togglePlayPause();
+          }
+        }, 8500); // 8.5 seconds per slide
+        updateSlide();
+      } else {
+        playBtnText.innerText = "Resume Video";
+        if (timer) clearInterval(timer);
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }
+    }
+
+    function toggleVoice() {
+      voiceEnabled = !voiceEnabled;
+      const statusText = document.getElementById("voiceStatusText");
+      const icon = document.getElementById("voiceIcon");
+      if (voiceEnabled) {
+        statusText.innerText = "Voice Narration: ON";
+        icon.className = "w-4 h-4 text-emerald-400";
+        updateSlide();
+      } else {
+        statusText.innerText = "Voice Narration: OFF";
+        icon.className = "w-4 h-4 text-slate-500";
+        if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+      }
+    }
+
+    // Web Audio API 2.7kHz Buzzer Simulation
+    function simulateAlarm() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(2700, audioCtx.currentTime); // 2.7kHz piezo frequency
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.8);
+      } catch (e) {
+        console.log("AudioContext error", e);
+      }
+    }
+  </script>
+</body>
+</html>

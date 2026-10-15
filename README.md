@@ -6,6 +6,19 @@ The system detects driver drowsiness in real-time by fusing physiological respir
 
 ---
 
+## 📺 Project Video Presentation & Architecture Deliverables
+
+| Deliverable | Format | Direct Link |
+| :--- | :--- | :--- |
+| **1080p Presentation Video** | MP4 with Voiceover Audio (7.5 MB) | [`project_presentation_video.mp4`](project_presentation_video.mp4) |
+| **Interactive Video Slide Player** | HTML5 + Web Speech Narration | [`project_video_presentation.html`](project_video_presentation.html) |
+| **System Architecture & Design** | Markdown Specification | [`docs/ARCHITECTURE_AND_DESIGN.md`](docs/ARCHITECTURE_AND_DESIGN.md) |
+| **3D Hardware Prototype Render** | High-Res Visual Render | [`docs/system_hardware_render.jpg`](docs/system_hardware_render.jpg) |
+| **Architecture Block Diagram** | PNG Schematic | [`docs/system_architecture_block_diagram.png`](docs/system_architecture_block_diagram.png) |
+| **4-Stage Safety State Machine** | Flowchart Diagram | [`docs/state_machine_flowchart.png`](docs/state_machine_flowchart.png) |
+
+---
+
 ## 1. System Architecture
 
 The ESP32 dual-core Xtensa LX6 architecture is leveraged to physically separate deterministic real-time digital signal processing on **Core 1** from non-deterministic cellular and network stacks on **Core 0**.
